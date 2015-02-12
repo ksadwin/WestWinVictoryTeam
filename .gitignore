@@ -44,3 +44,9 @@ Temporary Items
 
 # Ignore text files
 *.txt
+
+# except items
+!data/item/
+
+# apparently the database is too big so
+data/cache.db
