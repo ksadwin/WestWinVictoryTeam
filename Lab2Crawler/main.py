@@ -13,6 +13,7 @@ Dependencies: you may need to download the nltk importer:
 
 Code by Evan Sobkowicz (Commented by Doug Turnbull)
 February 2015
+ADDED BY KSADWIN: do not alphabetize terms for clean directory!!!!!
 """
 
 import os, sys
@@ -150,7 +151,7 @@ def main():
                         # Successful Spider response
                         page_title = db._quote(response[0])
                         headers = "Title: " + page_title + "\n" + str(response[1])
-                        terms = response[2] # These are stemmed!
+                        terms = response[5] # These are raw tokens! Because that's what we need!
                         html = response[3]
                         doc_type = response[4]
 
