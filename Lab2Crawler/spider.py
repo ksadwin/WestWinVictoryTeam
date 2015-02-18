@@ -6,7 +6,7 @@ from urllib.error import URLError, HTTPError
 from socket import timeout
 from bs4 import BeautifulSoup
 import bs4
-from nltk.tokenize import word_tokenize
+from nltk.tokenize import word_tokenize, RegexpTokenizer
 from nltk.stem.porter import PorterStemmer
 import re
 
@@ -37,13 +37,14 @@ class Spider:
             body = ""
 
         # Process text: Tokenize, Unique Terms, Lowercase Terms, Stemmed Terms
-        tokens = word_tokenize(body)
+        tokenizer = RegexpTokenizer("\w+|!-%|'-,|.-?]")
+        tokens = tokenizer.tokenize(body)
         terms = self.get_terms(tokens)
         lower_terms = self.get_terms(self.lower(terms))
         stem_terms = self.get_terms(self.stem(lower_terms))
 
         # Return data for main
-        return title, response.info(), stem_terms, str(soup), self.doctype(response.info())
+        return title, response.info(), stem_terms, str(soup), self.doctype(response.info()), tokens
 
     # Get the page, or return '-1' on an error
     def request(self, url):
