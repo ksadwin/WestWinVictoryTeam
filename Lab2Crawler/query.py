@@ -11,94 +11,97 @@ Using the database created in Lab 2, returns pages that match:
 import webdb
 import os, sys
 from spider import *
+import pickle
 
 class BooleanSearchEngine():
-    def __init__(self, dirLocation, cache):
+    def __init__(self, dirLocation, cache, picklePlace):
         self.cache = cache
         self.dir = dirLocation
+        self.spider = Spider()
+        #search for pickled index
+        if os.path.exists(picklePlace):
+            self.index = pickle.load(open(picklePlace, "rb"))
+        else:
+            #create index
+            self.index = {}
+            #index will be a multidimensional structure
+            # 1. a dictionary (terms as keys)
+            # 2. of dictionaries (values mapped to terms are docIDs as keys)
+            # 3. of lists (values mapped to docIDs are lists of positions)
 
-        #create index
-        #index will be a multidimensional structure
-        # 1. dictionary (keys = terms)
-        # 2. of dictionaries (keys = docIDs)
-        # 3. of lists (value pair for each docID, all positions of words)
+            #go through each clean file and tokenize
+            for filename in os.listdir(self.dir):
+                docID = os.path.splitext(filename)[0]
+                fileTokens = open(self.dir+filename, "r", encoding="utf-8").readlines()
+                terms = self.spider.stem(self.spider.lower(fileTokens))
+                
+                #check if all of the tokens are already in the dictionary
+                for position in range(len(terms)):
+                    #check if the term is in the dictionary of terms
+                    if terms[position] not in self.index.keys():
+                        #add term to dictionary, then put docID:positionList in secondary dict
+                        self.index[terms[position]] = {docID:[position]}
+                    elif docID not in self.index[terms[position]].keys():
+                        #add docID:positionList dictionary to term's dictionary
+                        self.index[terms[position]][docID] = [position]
+                    else:
+                        #add position to docID's list
+                        self.index[terms[position]][docID].append(position)
 
-        #I wrote this two ways, maybe one of them will make sense
-        # 1. keys of termDict: unique terms
-        # 2. each unique term is mapped to dict of docIDs containing term
-        # 3. each docID is mapped to a list of positions where term is found
-        self.termDict = {}
-        spider = Spider()
-        #go through each clean file and tokenize
-        for filename in os.listdir(self.dir):
-            docID = os.path.splitext(filename)[0]
-            fileTokens = open(self.dir+filename, "r", encoding="utf-8").readlines()
-            terms = spider.stem(spider.lower(fileTokens))
             
-            #check if all of the tokens are already in the dictionary
-            for position in range(len(terms)):
-                #check if the term is in the dictionary of terms
-                if terms[position] not in self.termDict.keys():
-                    #add term to dictionary, then put docID:positionList in secondary dict
-                    self.termDict[terms[position]] = {docID:[position]}
-                elif docID not in self.termDict[terms[position]].keys():
-                    #add docID:positionList dictionary to term's dictionary
-                    self.termDict[terms[position]] = ({docID:[position]})
-                else:
-                    #add position to docID's list
-                    self.termDict[terms[position]][docID].append(position)
+            pickle.dump(self.index, open("data/index.p", "wb"))
 
-        #now pickle it??
-        """
-        Prints out index
-        for term in self.termDict.keys():
+
+    def printIndex(self):
+        #For testing: prints out index
+        for term in self.index.keys():
             print(term)
-            for docID in self.termDict[term]:
+            for docID in self.index[term]:
                 print(docID, end=":\t")
-                for position in self.termDict[term][docID]:
+                for position in self.index[term][docID]:
                     print(position, end=" ")
                 print()
-            print()
-        """
+            print() 
+
+
+
 
     def phraseQuery(self):
         query = getQuery()
-        query = spider.stem(spider.lower(q))
+        
         matches = []
         for i in range(len(query)):
             if i==0:
-                if query[i] in self.termDict:
-                    for docID in self.termDict[query[i]]:
+                if query[i] in self.index:
+                    for docID in self.index[query[i]]:
                         matches.append(docID)
             else:
                 isPhrase = False
                 #for each document that matched the first word
                 #see if the word after it is the next word in the query
-                
-                
+
+
 
     def booleanOR(self):
         query = getQuery()
-        query = spider.stem(spider.lower(q))
         grossMatches = []
         for i in range(len(query)):
             individualMatches = []
             if query[i] is not "or":
-                if query[i] in self.termDict:
-                    for docID in self.termDict[query[i]]:
+                if query[i] in self.index:
+                    for docID in self.index[query[i]]:
                         grossMatches.append(docID)
         #grossMatches contains docIDs of results
 
     def booleanAND(self):
         query = getQuery()
-        query = spider.stem(spider.lower(q))
         grossMatches = []
         listOfIM = []
         for i in range(len(query)):
             individualMatches = []
             if query[i] is not "and":
-                if query[i] in self.termDict:
-                    for docID in self.termDict[query[i]]:
+                if query[i] in self.index:
+                    for docID in self.index[query[i]]:
                         grossMatches.append(docID)
                         individualMatches.append(docID)
             listOfIM.append(individualMatches)
@@ -119,19 +122,21 @@ class BooleanSearchEngine():
             print("Invalid single token query.")
         else:
             matches = []
-            query = spider.stem(spider.lower(query))
-            if query[0] in self.termDict:
-                for docID in self.termDict[query[0]]:
+            if query[0] in self.index:
+                for docID in self.index[query[0]]:
                     matches.append(docID)
         #matches contains docIDs of results
 
 def getQuery():
     query = input("Enter query: ")
     query = query.split()
+    query = self.spider.stem(self.spider.lower(query))
     return query
 
 def main():
-    bse = BooleanSearchEngine("data/clean/", "data/cache.db")
+    bse = BooleanSearchEngine("data/clean/", "data/cache.db", "data/index.p")
+
+    #bse.printIndex()
     
     #a while loop for getting user queries
     search = ""
