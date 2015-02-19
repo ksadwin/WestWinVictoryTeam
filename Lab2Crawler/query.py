@@ -33,6 +33,9 @@ class BooleanSearchEngine():
             for filename in os.listdir(self.dir):
                 docID = os.path.splitext(filename)[0]
                 fileTokens = open(self.dir+filename, "r", encoding="utf-8").readlines()
+                for i in range(len(fileTokens)):
+                    fileTokens[i] = fileTokens[i].replace('\n', '')
+                
                 terms = self.spider.stem(self.spider.lower(fileTokens))
                 
                 #check if all of the tokens are already in the dictionary
@@ -64,10 +67,8 @@ class BooleanSearchEngine():
             print() 
 
 
-
-
-    def phraseQuery(self):
-        query = getQuery()
+    def nearQuery(self):
+        query = self.getQuery()
         
         matches = []
         for i in range(len(query)):
@@ -76,62 +77,107 @@ class BooleanSearchEngine():
                     for docID in self.index[query[i]]:
                         matches.append(docID)
             else:
-                isPhrase = False
                 #for each document that matched the first word
                 #see if the word after it is the next word in the query
+                isNear = False
+                for match in matches:
+                    for position in self.index[query[i-1]][docID]:
+                        if docID in self.index[query[i]]:
+                            for j in range(-5, 5):
+                                if position+j in self.index[query[i]][docID]:
+                                    isNear = True
+                    if not isNear:
+                        matches.remove(match)
+        #matches contains docIDs of results
+        for docID in matches:
+            print(docID, end=" ")
+
+            
+
+    def phraseQuery(self):
+        query = self.getQuery()
+        
+        matches = []
+        for i in range(len(query)):
+            if i==0:
+                if query[i] in self.index:
+                    for docID in self.index[query[i]]:
+                        matches.append(docID)
+            else:
+                #for each document that matched the first word
+                #see if the word after it is the next word in the query
+                isPhrase = False
+                for match in matches:
+                    for position in self.index[query[i-1]][docID]:
+                        if docID in self.index[query[i]]:
+                            if position+1 in self.index[query[i]][docID]:
+                                isPhrase = True
+                    if not isPhrase:
+                        matches.remove(match)
+        #matches contains docIDs of results
+        for docID in matches:
+            print(docID, end=" ")
 
 
 
     def booleanOR(self):
-        query = getQuery()
+        query = self.getQuery()
         grossMatches = []
         for i in range(len(query)):
             individualMatches = []
             if query[i] is not "or":
                 if query[i] in self.index:
                     for docID in self.index[query[i]]:
-                        grossMatches.append(docID)
-        #grossMatches contains docIDs of results
+                        if docID not in grossMatches:
+                            grossMatches.append(docID)
+        grossMatches.sort()
+        for docID in grossMatches:
+            print(docID, end=" ")
 
     def booleanAND(self):
-        query = getQuery()
-        grossMatches = []
-        listOfIM = []
+        query = self.getQuery()
+        query.remove("and")
+        matches = []
         for i in range(len(query)):
-            individualMatches = []
-            if query[i] is not "and":
+            if i==0:
                 if query[i] in self.index:
                     for docID in self.index[query[i]]:
-                        grossMatches.append(docID)
-                        individualMatches.append(docID)
-            listOfIM.append(individualMatches)
-        for word in grossMatches:
-            isCommon = True
-            for l in listOfIM:
-                if word not in l:
-                    isCommon = False
-            if not isCommon:
-                grossMatches.remove(word)
-        #grossMatches contains docIDs of results
+                        matches.append(docID)
+            else:
+                #for each document that matched the first word
+                #see if the word after it is the next word in the query
+                isInBoth = False
+                for match in matches:
+                    for position in self.index[query[i-1]][docID]:
+                        if docID in self.index[query[i]]:
+                            isInBoth = True
+                    if not isInBoth:
+                        matches.remove(match)
+        #matches contains docIDs of results
+        for docID in matches:
+            print(docID, end=" ")
             
 
     def singleToken(self):
-        query = getQuery()
+        query = self.getQuery()
         #make sure users only enter one word.
         if len(query) != 1:
             print("Invalid single token query.")
         else:
+            print(query[0])
             matches = []
-            if query[0] in self.index:
+            if query[0] in self.index.keys():
                 for docID in self.index[query[0]]:
                     matches.append(docID)
         #matches contains docIDs of results
+        for docID in matches:
+            print(docID, end=" ")
 
-def getQuery():
-    query = input("Enter query: ")
-    query = query.split()
-    query = self.spider.stem(self.spider.lower(query))
-    return query
+    def getQuery(self):
+        query = input("Enter query: ")
+        query = query.split()
+        query = self.spider.stem(self.spider.lower(query))
+        return query
 
 def main():
     bse = BooleanSearchEngine("data/clean/", "data/cache.db", "data/index.p")
@@ -150,13 +196,13 @@ def main():
         if search == "1":
             bse.singleToken()
         elif search == "2":
-            print("AND")
+            bse.booleanAND()
         elif search == "3":
-            print("OR")
+            bse.booleanOR()
         elif search == "4":
-            print("phrase")
+            bse.phraseQuery()
         elif search == "5":
-            print("NEAR")
+            bse.nearQuery()
         elif search != "0":
             print("Invalid input.")
     print("Goodbye")
