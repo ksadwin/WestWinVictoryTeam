@@ -15,7 +15,7 @@ import pickle
 
 class BooleanSearchEngine():
     def __init__(self, dirLocation, cache, picklePlace):
-        self.cache = cache
+        self.cache = webdb.WebDB(cache)
         self.dir = dirLocation
         self.spider = Spider()
         #search for pickled index
@@ -69,28 +69,30 @@ class BooleanSearchEngine():
 
     def nearQuery(self):
         query = self.getQuery()
-        
-        matches = []
-        for i in range(len(query)):
-            if i==0:
-                if query[i] in self.index:
-                    for docID in self.index[query[i]]:
-                        matches.append(docID)
-            else:
-                #for each document that matched the first word
-                #see if the word after it is the next word in the query
-                isNear = False
-                for match in matches:
-                    for position in self.index[query[i-1]][docID]:
-                        if docID in self.index[query[i]]:
-                            for j in range(-5, 5):
-                                if position+j in self.index[query[i]][docID]:
-                                    isNear = True
-                    if not isNear:
-                        matches.remove(match)
-        #matches contains docIDs of results
-        for docID in matches:
-            print(docID, end=" ")
+        try:
+            query.remove("near")
+            matches = []
+            for i in range(len(query)):
+                if i==0:
+                    if query[i] in self.index:
+                        for docID in self.index[query[i]]:
+                            matches.append(docID)
+                else:
+                    #for each document that matched the first word
+                    #see if the word after it is the next word in the query
+                    isNear = False
+                    for match in matches:
+                        for position in self.index[query[i-1]][docID]:
+                            if docID in self.index[query[i]]:
+                                for j in range(-5, 5):
+                                    if position+j in self.index[query[i]][docID]:
+                                        isNear = True
+                        if not isNear:
+                            matches.remove(match)
+            #matches contains docIDs of results
+            self.processMatches(matches)
+        except ValueError:
+            print("Not a valid near query.")
 
             
 
@@ -115,47 +117,48 @@ class BooleanSearchEngine():
                     if not isPhrase:
                         matches.remove(match)
         #matches contains docIDs of results
-        for docID in matches:
-            print(docID, end=" ")
+        self.processMatches(matches)
 
 
 
     def booleanOR(self):
         query = self.getQuery()
-        grossMatches = []
-        for i in range(len(query)):
-            individualMatches = []
-            if query[i] is not "or":
+        try: 
+            query.remove("or")
+            matches = []
+            for i in range(len(query)):
                 if query[i] in self.index:
                     for docID in self.index[query[i]]:
-                        if docID not in grossMatches:
-                            grossMatches.append(docID)
-        grossMatches.sort()
-        for docID in grossMatches:
-            print(docID, end=" ")
+                        if docID not in matches:
+                            matches.append(docID)
+        
+            self.processMatches(matches)
+        except ValueError:
+            print("Not a valid OR query.")
 
     def booleanAND(self):
         query = self.getQuery()
-        query.remove("and")
-        matches = []
-        for i in range(len(query)):
-            if i==0:
-                if query[i] in self.index:
-                    for docID in self.index[query[i]]:
-                        matches.append(docID)
-            else:
-                #for each document that matched the first word
-                #see if the word after it is the next word in the query
-                isInBoth = False
-                for match in matches:
-                    for position in self.index[query[i-1]][docID]:
+        try: 
+            query.remove("and")
+            matches = []
+            for i in range(len(query)):
+                if i==0:
+                    if query[i] in self.index:
+                        for docID in self.index[query[i]]:
+                            matches.append(docID)
+                else:
+                    #for each document that matched the first word
+                    #see if the word after it is the next word in the query
+                    isInBoth = False
+                    for docID in matches:
                         if docID in self.index[query[i]]:
                             isInBoth = True
                     if not isInBoth:
                         matches.remove(match)
-        #matches contains docIDs of results
-        for docID in matches:
-            print(docID, end=" ")
+            #matches contains docIDs of results
+            self.processMatches(matches)
+        except ValueError:
+            print("Not a valid AND query.")
             
 
     def singleToken(self):
@@ -164,14 +167,30 @@ class BooleanSearchEngine():
         if len(query) != 1:
             print("Invalid single token query.")
         else:
-            print(query[0])
             matches = []
             if query[0] in self.index.keys():
                 for docID in self.index[query[0]]:
                     matches.append(docID)
         #matches contains docIDs of results
+        self.processMatches(matches)
+
+    def processMatches(self, matches):
+        print("Results:", len(matches))
+        
+        nameDict = {}
         for docID in matches:
-            print(docID, end=" ")
+            itemID = self.cache.lookupItemIDFromDocID(int(docID))
+            name = self.cache.lookupItemName(itemID)
+            if name in nameDict.keys():
+                nameDict[name] += 1
+            else:
+                nameDict[name] = 0
+        numHits = list(nameDict.values())
+        names = list(nameDict.keys())
+        mostCommon = names[numHits.index(max(numHits))]
+        print(mostCommon, "(", nameDict[mostCommon], ")")
+
+
 
     def getQuery(self):
         query = input("Enter query: ")
@@ -181,8 +200,6 @@ class BooleanSearchEngine():
 
 def main():
     bse = BooleanSearchEngine("data/clean/", "data/cache.db", "data/index.p")
-
-    #bse.printIndex()
     
     #a while loop for getting user queries
     search = ""

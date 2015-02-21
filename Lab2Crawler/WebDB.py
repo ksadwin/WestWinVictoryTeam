@@ -118,6 +118,20 @@ class WebDB(object):
             return None
         else:
             return reslist[0][0]
+
+    def lookupItemName(self, itemID):
+        """
+        Returns name and itemType from itemID
+        """
+        sql = "SELECT name FROM Item WHERE id=%s"\
+              % (itemID)
+        res = self.execute(sql)
+        reslist = res.fetchall()
+        if reslist == []:
+            return None
+        else:
+            return reslist[0]
+    
             
     def lookupURLToItem(self, urlID, itemID):
         """
@@ -128,6 +142,22 @@ class WebDB(object):
         """
         sql = "SELECT id FROM UrlToItem WHERE urlID=%d AND itemID=%d"\
               % (urlID, itemID)
+        res = self.execute(sql)
+        reslist = res.fetchall()
+        if reslist == []:
+            return None
+        else:
+            return reslist[0]
+
+    def lookupItemIDFromDocID(self, urlID):
+        """
+        Returns itemID for the row
+        matching name and itemType in the Item table.
+
+        If there is no match, returns an None.
+        """
+        sql = "SELECT itemID FROM UrlToItem WHERE urlID=%d"\
+              % (urlID)
         res = self.execute(sql)
         reslist = res.fetchall()
         if reslist == []:
