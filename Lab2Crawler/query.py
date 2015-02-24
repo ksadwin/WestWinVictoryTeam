@@ -12,6 +12,7 @@ import webdb
 import os, sys
 from spider import *
 import pickle
+import math
 
 class BooleanSearchEngine():
     def __init__(self, dirLocation, cache, picklePlace):
@@ -40,16 +41,38 @@ class BooleanSearchEngine():
                 
                 #check if all of the tokens are already in the dictionary
                 for position in range(len(terms)):
-                    #check if the term is in the dictionary of terms
+                    #check if the current term is in the dictionary of terms
                     if terms[position] not in self.index.keys():
                         #add term to dictionary, then put docID:positionList in secondary dict
-                        self.index[terms[position]] = {docID:[position]}
+                        self.index[terms[position]] = {docID:[0, position]}
+                        #first position will be filled with the weight
                     elif docID not in self.index[terms[position]].keys():
                         #add docID:positionList dictionary to term's dictionary
-                        self.index[terms[position]][docID] = [position]
+                        self.index[terms[position]][docID] = [0, position]
+                        #first position will be filled with the weight
                     else:
                         #add position to docID's list
                         self.index[terms[position]][docID].append(position)
+
+            #figure out weights, w = tf * idf / magnitude
+            # tf = 1 + log(len(self.index[term][docID])
+            # idf = log(N/len(self.index[term]))
+            # magnitude = sqrt( sum of squared rawtf)
+            # N = number of documents (JEN HELP)
+            #CURRENTLY HARD-CODED, WE CAN DO BETTER
+            N = 771
+            for term in self.index.keys():
+                df = len(self.index[term])
+                idf = math.log(N/df)
+                for docID in self.index[term].keys():
+                    tf = len(self.index[term][docID])
+                    #putting the weight in the docID list
+                    rawW = math.log1p(tf) * idf
+                    self.index[term][docID][0] = rawW
+                    
+
+
+            
 
             
             pickle.dump(self.index, open("data/index.p", "wb"))
