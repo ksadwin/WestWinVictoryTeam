@@ -72,25 +72,27 @@ class BooleanSearchEngine():
         try:
             query.remove("near")
             matches = []
+            matches2 = []
             for i in range(len(query)):
                 if i==0:
                     if query[i] in self.index:
                         for docID in self.index[query[i]]:
                             matches.append(docID)
+                            
                 else:
                     #for each document that matched the first word
                     #see if the word after it is the next word in the query
-                    isNear = False
-                    for match in matches:
+                    for docID in matches:
                         for position in self.index[query[i-1]][docID]:
-                            if docID in self.index[query[i]]:
-                                for j in range(-5, 5):
-                                    if position+j in self.index[query[i]][docID]:
-                                        isNear = True
-                        if not isNear:
-                            matches.remove(match)
+                            if docID not in matches2:
+                                if docID in self.index[query[i]]:
+                                    for j in range(-5, 5):
+                                        if position+j in self.index[query[i]][docID]:
+                                            matches2.append(docID)
+                                            #don't need to look at other positions
+                                            break
             #matches contains docIDs of results
-            self.processMatches(matches)
+            self.processMatches(matches2)
         except ValueError:
             print("Not a valid near query.")
 
@@ -100,6 +102,7 @@ class BooleanSearchEngine():
         query = self.getQuery()
         
         matches = []
+        matches2 = []
         for i in range(len(query)):
             if i==0:
                 if query[i] in self.index:
@@ -108,16 +111,16 @@ class BooleanSearchEngine():
             else:
                 #for each document that matched the first word
                 #see if the word after it is the next word in the query
-                isPhrase = False
-                for match in matches:
+                
+                for docID in matches:
                     for position in self.index[query[i-1]][docID]:
                         if docID in self.index[query[i]]:
                             if position+1 in self.index[query[i]][docID]:
-                                isPhrase = True
-                    if not isPhrase:
-                        matches.remove(match)
+                                matches2.append(docID)
+                                #don't look at remaining positions
+                                break
         #matches contains docIDs of results
-        self.processMatches(matches)
+        self.processMatches(matches2)
 
 
 
@@ -138,23 +141,16 @@ class BooleanSearchEngine():
 
     def booleanAND(self):
         query = self.getQuery()
-        try: 
-            query.remove("and")
+        try:
             matches = []
-            for i in range(len(query)):
-                if i==0:
-                    if query[i] in self.index:
-                        for docID in self.index[query[i]]:
-                            matches.append(docID)
-                else:
-                    #for each document that matched the first word
-                    #see if the word after it is the next word in the query
-                    isInBoth = False
-                    for docID in matches:
-                        if docID in self.index[query[i]]:
-                            isInBoth = True
-                    if not isInBoth:
-                        matches.remove(match)
+            query.remove("and")
+            if len(query) == 2:
+                for docID1 in self.index[query[0]]:
+                    for docID2 in self.index[query[1]]:
+                        if docID1 == docID2:
+                            matches.append(docID1)
+                            
+            
             #matches contains docIDs of results
             self.processMatches(matches)
         except ValueError:
@@ -176,19 +172,19 @@ class BooleanSearchEngine():
 
     def processMatches(self, matches):
         print("Results:", len(matches))
-        
-        nameDict = {}
-        for docID in matches:
-            itemID = self.cache.lookupItemIDFromDocID(int(docID))
-            name = self.cache.lookupItemName(itemID)
-            if name in nameDict.keys():
-                nameDict[name] += 1
-            else:
-                nameDict[name] = 0
-        numHits = list(nameDict.values())
-        names = list(nameDict.keys())
-        mostCommon = names[numHits.index(max(numHits))]
-        print(mostCommon, "(", nameDict[mostCommon], ")")
+        if len(matches) != 0:
+            nameDict = {}
+            for docID in matches:
+                itemID = self.cache.lookupItemIDFromDocID(int(docID))
+                name = self.cache.lookupItemName(itemID)
+                if name in nameDict.keys():
+                    nameDict[name] += 1
+                else:
+                    nameDict[name] = 1
+            numHits = list(nameDict.values())
+            names = list(nameDict.keys())
+            mostCommon = names[numHits.index(max(numHits))]
+            print(mostCommon, "(", nameDict[mostCommon], ")")
 
 
 
