@@ -15,20 +15,30 @@ import pickle
 import math
 
 class BooleanSearchEngine():
-    def __init__(self, dirLocation, cache, picklePlace):
+    def __init__(self, dirLocation, cache, nnnp, ltcp):
         self.cache = webdb.WebDB(cache)
         self.dir = dirLocation
         self.spider = Spider()
+        #hardcoded no. of documents - JEN HELP
+        self.N = 771
         #search for pickled index
-        if os.path.exists(picklePlace):
-            self.index = pickle.load(open(picklePlace, "rb"))
+        if os.path.exists(nnnp) and os.path.exists(ltcp):
+            print("Loading data...")
+            self.index = pickle.load(open(nnnp, "rb"))
+            self.ltcindex = pickle.load(open(ltcp, "rb"))
         else:
+            print("Creating new nnn index...")
             #create index
             self.index = {}
             #index will be a multidimensional structure
             # 1. a dictionary (terms as keys)
             # 2. of dictionaries (values mapped to terms are docIDs as keys)
             # 3. of lists (values mapped to docIDs are lists of positions)
+
+            #this serves as nnn index
+            # tf = len(self.index[term][docID]) (the -1 is inconsequential because it is part of a linear function)
+            # df = 1
+            # w = tf * df = tf
 
             #go through each clean file and tokenize
             for filename in os.listdir(self.dir):
@@ -53,29 +63,37 @@ class BooleanSearchEngine():
                     else:
                         #add position to docID's list
                         self.index[terms[position]][docID].append(position)
+            print("nnn index created. Saving...")
+            pickle.dump(self.index, open("data/nnnindex.p", "wb"))
 
+            print("nnn index saved.\nCreating new ltc index...")
+
+            
             #figure out weights, w = tf * idf / magnitude
-            # tf = 1 + log(len(self.index[term][docID])
+            # tf = 1 + log(len(self.index[term][docID])-1)
             # idf = log(N/len(self.index[term]))
-            # magnitude = sqrt( sum of squared rawtf)
-            # N = number of documents (JEN HELP)
-            #CURRENTLY HARD-CODED, WE CAN DO BETTER
-            N = 771
-            for term in self.index.keys():
-                df = len(self.index[term])
-                idf = math.log(N/df)
-                for docID in self.index[term].keys():
-                    tf = len(self.index[term][docID])
-                    #putting the weight in the docID list
+            # magnitude = sqrt( sum of squared rawW )
+            
+            #accessing the correct indices: turn docID into int, subtract 1
+            sqrdMag = [0] * self.N
+            self.ltcindex = self.index.copy()
+            for term in self.ltcindex.keys():
+                df = len(self.ltcindex[term])
+                idf = math.log(self.N/df)
+                for docID in self.ltcindex[term].keys():
+                    #subtract one to account for extra idx in beginning
+                    tf = len(self.ltcindex[term][docID])-1
+                    #wt = tf * idf
                     rawW = math.log1p(tf) * idf
-                    self.index[term][docID][0] = rawW
-                    
+                    self.ltcindex[term][docID][0] = rawW
+                    sqrdMag[int(docID)-1] += math.pow(rawW, 2)
 
-
-            
-
-            
-            pickle.dump(self.index, open("data/index.p", "wb"))
+            for term in self.ltcindex.keys():
+                for docID in self.ltcindex[term].keys():
+                    self.ltcindex[term][docID][0] /= math.sqrt(sqrdMag[int(docID)-1])
+            print("ltc index created. Saving...")
+            pickle.dump(self.ltcindex, open("data/ltcindex.p", "wb"))
+            print("ltc index saved.")
 
 
     def printIndex(self):
@@ -211,6 +229,62 @@ class BooleanSearchEngine():
 
 
 
+
+
+
+    def scoreDocs(self, query, useLTC = True):
+        score = {}
+        for term in query.keys():
+            if useLTC:
+                for docID in self.ltcindex[term]:
+                    if docID not in score.keys():
+                        score[docID] = self.ltcindex[term][docID][0]
+                    else:
+                        score[docID] += self.ltcindex[term][docID][0]
+            else:
+                for docID in self.index[term]:
+                    if docID not in score.keys():
+                        score[docID] = len(self.index[term][docID])
+                    else:
+                        score[docID] += len(self.index[term][docID])
+        count = 1
+        for docID in sorted(score, key=score.get, reverse=True):
+            rslt = self.cache.lookupCachedURL_byID(int(docID))
+            print(count, ")", rslt[2], "\n", rslt[0])
+            print("Score:", score[docID], "\n")
+            count += 1
+            if count > 10:
+                break
+
+
+    def getNNNQuery(self):
+        query = {}
+        #get tf for terms in query
+        for term in self.getQuery():
+            if term not in query.keys():
+                query[term] = 1
+            else:
+                query[term] += 1
+        return query
+
+    
+    def getLTCQuery(self):
+        query = self.getNNNQuery()
+        #get weights and squared magnitude
+        sqMag = 0
+        for term in query.keys():
+            if term in self.ltcindex.keys():
+                df = len(self.ltcindex[term])
+                idf = math.log(self.N/df)
+                tf = math.log1p(query[term])
+                query[term] = tf * idf
+                sqMag += math.pow(query[term], 2)
+                
+        #normalize
+        for term in query.keys():
+            query[term] = query[term]/math.sqrt(sqMag)
+        return query
+        
     def getQuery(self):
         query = input("Enter query: ")
         query = query.split()
@@ -218,9 +292,25 @@ class BooleanSearchEngine():
         return query
 
 def main():
-    bse = BooleanSearchEngine("data/clean/", "data/cache.db", "data/index.p")
+    bse = BooleanSearchEngine("data/clean/", "data/cache.db", "data/nnnindex.p", "data/ltcindex.p")
+
+    search = ""
+    while search != "n":
+        d = input("For documents: nnn or ltc?: ")
+        q = input("For queries: nnn or ltc?: ")
+        if q == "ltc":
+            query = bse.getLTCQuery()
+        else:
+            query = bse.getNNNQuery()
+        if d == "ltc":
+            bse.scoreDocs(query)
+        else:
+            bse.scoreDocs(query, False)
+        search = input("Continue? y/n: ")
+            
     
-    #a while loop for getting user queries
+    #a while loop for getting user queries for BOOLEAN RETRIEVAL
+    """
     search = ""
     while search != "0":
         print(" 1. single token query")
@@ -242,5 +332,6 @@ def main():
         elif search != "0":
             print("Invalid input.")
     print("Goodbye")
+    """
 
 main()
