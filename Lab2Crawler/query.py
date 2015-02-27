@@ -236,17 +236,19 @@ class BooleanSearchEngine():
         score = {}
         for term in query.keys():
             if useLTC:
+                #doc ltc
                 for docID in self.ltcindex[term]:
                     if docID not in score.keys():
-                        score[docID] = self.ltcindex[term][docID][0]
+                        score[docID] = self.ltcindex[term][docID][0]*query[term]
                     else:
-                        score[docID] += self.ltcindex[term][docID][0]
+                        score[docID] += self.ltcindex[term][docID][0]*query[term]
             else:
+                #doc nnn
                 for docID in self.index[term]:
                     if docID not in score.keys():
-                        score[docID] = len(self.index[term][docID])
+                        score[docID] = len(self.index[term][docID])*query[term]
                     else:
-                        score[docID] += len(self.index[term][docID])
+                        score[docID] += len(self.index[term][docID])*query[term]
         count = 1
         for docID in sorted(score, key=score.get, reverse=True):
             rslt = self.cache.lookupCachedURL_byID(int(docID))
