@@ -130,7 +130,7 @@ class WebDB(object):
         if reslist == []:
             return None
         else:
-            return reslist[0]
+            return reslist[0][0]
     
             
     def lookupURLToItem(self, urlID, itemID):
@@ -163,7 +163,7 @@ class WebDB(object):
         if reslist == []:
             return None
         else:
-            return reslist[0]
+            return reslist[0][0]
 
     def deleteCachedURL_byID(self, cache_url_id):
         """

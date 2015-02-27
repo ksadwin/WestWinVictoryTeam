@@ -234,6 +234,7 @@ class BooleanSearchEngine():
 
     def scoreDocs(self, query, useLTC = True):
         score = {}
+        itemScore = {}
         for term in query.keys():
             if useLTC:
                 #doc ltc
@@ -242,6 +243,12 @@ class BooleanSearchEngine():
                         score[docID] = self.ltcindex[term][docID][0]*query[term]
                     else:
                         score[docID] += self.ltcindex[term][docID][0]*query[term]
+                    itemID = self.cache.lookupItemIDFromDocID(int(docID))
+                    item = self.cache.lookupItemName(int(itemID))
+                    if item not in itemScore.keys():
+                        itemScore[item] = self.ltcindex[term][docID][0]*query[term]
+                    else:
+                        itemScore[item] += self.ltcindex[term][docID][0]*query[term]
             else:
                 #doc nnn
                 for docID in self.index[term]:
@@ -249,13 +256,26 @@ class BooleanSearchEngine():
                         score[docID] = len(self.index[term][docID])*query[term]
                     else:
                         score[docID] += len(self.index[term][docID])*query[term]
+                    itemID = self.cache.lookupItemIDFromDocID(int(docID))
+                    item = self.cache.lookupItemName(int(itemID))
+                    if item not in itemScore.keys():
+                        itemScore[item] = len(self.index[term][docID])*query[term]
+                    else:
+                        itemScore[item] += len(self.index[term][docID])*query[term]
+        count = 1
+        for item in sorted(itemScore, key=itemScore.get, reverse=True):
+            print(count, ")", item, "\tScore:", itemScore[item])
+            count += 1
+            if count > 5:
+                break
+        print("\n")
         count = 1
         for docID in sorted(score, key=score.get, reverse=True):
             rslt = self.cache.lookupCachedURL_byID(int(docID))
             print(count, ")", rslt[2], "\n", rslt[0])
             print("Score:", score[docID], "\n")
             count += 1
-            if count > 10:
+            if count > 5:
                 break
 
 
