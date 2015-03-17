@@ -13,6 +13,7 @@ import os, sys
 from spider import *
 import pickle
 import math
+import lab5
 
 class BooleanSearchEngine():
     def __init__(self, dirLocation, cache, nnnp, ltcp):
