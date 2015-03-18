@@ -8,7 +8,7 @@ import os
 import webdb
 
 #Kelly
-def runQueries():
+def getQueries():
     """
     This function will use the txt files in the item folder
     to generate the test queries and return them (as a list?)
@@ -37,7 +37,7 @@ def randomResult():
     """
 
 #Kelly
-def getR(item, results):
+def translateResults(item, results):
     """
     Finds number of relevant webpages for a given item.
     Also processes results into true/false list?
