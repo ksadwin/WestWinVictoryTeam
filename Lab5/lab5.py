@@ -39,10 +39,9 @@ def randomResult():
 #Kelly
 def translateResults(item, results):
     """
-    Finds number of relevant webpages for a given item.
-    Also processes results into true/false list?
-    Only processes results into true/false list?
-    we shall see
+    Finds number R of relevant webpages for a given item.
+    Also processes results into true/false list.
+    Returns a tuple booleanRslts, R
     """
     booleanRslts = []
     R = 0
@@ -76,8 +75,8 @@ def auc(rrtuple):
     """
     At each True Negative, multiply the current True Positive rate
     by 1/(number of irrelevant results)
-    number of irrelevant results could be determined by subtracting
-    R from total number of results.
+    number of irrelevant results determined by subtracting R
+    from total number of results.
     """
     rslts = rrtuple[0]
     R = rrtuple[1]
@@ -93,5 +92,6 @@ def auc(rrtuple):
 
 def main():
     #for testing functions
-    #in case that's a thing you want to do
-    #(I haven't wanted to do it yet)
+    
+    
+main()
