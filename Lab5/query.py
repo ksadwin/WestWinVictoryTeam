@@ -269,8 +269,8 @@ class BooleanSearchEngine():
         sortedDocIDs = sorted(score, key=score.get, reverse=True)
         
         rslts, R = self.translateResults(rq, sortedDocIDs)
-        #TODO: add other precision tests
-        print("AUC:", lab5.auc(rslts, R))
+        #TODO: return other precision tests
+        return lab5.auc(rslts, R)
 
         """
         count = 1
@@ -287,7 +287,7 @@ class BooleanSearchEngine():
             print(count, ")", rslt[2], "\n", rslt[0])
             print("Score:", score[docID], "\n")
             count += 1
-            if count < 5:
+            if count > 5:
                 break
         """
 
@@ -349,26 +349,32 @@ class BooleanSearchEngine():
 def main():
     bse = BooleanSearchEngine("data/clean/", "data/cache.db", "data/nnnindex.p", "data/ltcindex.p")
 
-
+    auc = [0] *4
     queries = lab5.getQueries()
     for q in queries:
-        print(q)
+        
         nnnq = bse.getNNNQuery(q)
         ltcq = bse.getLTCQuery(q)
-        print("nnn.nnn")
-        bse.scoreDocs(nnnq, False, q)
-        print("nnn.ltc")
-        bse.scoreDocs(nnnq, True, q)
-        print("ltc.nnn")
-        bse.scoreDocs(ltcq, False, q)
-        print("ltc.ltc")
-        bse.scoreDocs(ltcq, True, q)
-        print("Random")
+        #nnn.nnn
+        auc[0] += bse.scoreDocs(nnnq, False, q)
+
+        #ltc.nnn
+        auc[1] += bse.scoreDocs(nnnq, True, q)
+
+        #nnn.ltc
+        auc[2] += bse.scoreDocs(ltcq, False, q)
+
+        #ltc.ltc
+        auc[3] += bse.scoreDocs(ltcq, True, q)
+
+        
         #rslts = lab5.randomResult()
         #rslts, R = bse.translateResults(q, rslts)
         #all precision tests
         
-
+    for i in range(4):
+        auc[i] = auc[i]/len(queries)
+        print(auc[i])
     
     
     #a while loop for weighted queries
