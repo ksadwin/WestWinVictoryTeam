@@ -14,6 +14,7 @@ from spider import *
 import pickle
 import math
 import lab5
+import string
 
 class BooleanSearchEngine():
     def __init__(self, dirLocation, cache, nnnp, ltcp):
@@ -233,7 +234,7 @@ class BooleanSearchEngine():
 
 
 
-    def scoreDocs(self, query, useLTC = True):
+    def scoreDocs(self, query, useLTC = True, rq = ""):
         score = {}
         itemScore = {}
         for term in query.keys():
@@ -263,6 +264,15 @@ class BooleanSearchEngine():
                         itemScore[item] = len(self.index[term][docID])*query[term]
                     else:
                         itemScore[item] += len(self.index[term][docID])*query[term]
+
+        #lab 5 additions
+        sortedDocIDs = sorted(score, key=score.get, reverse=True)
+        
+        rslts, R = self.translateResults(rq, sortedDocIDs)
+        #TODO: add other precision tests
+        print("AUC:", lab5.auc(rslts, R))
+
+        """
         count = 1
         for item in sorted(itemScore, key=itemScore.get, reverse=True):
             print(count, ")", item, "\tScore:", itemScore[item])
@@ -271,19 +281,21 @@ class BooleanSearchEngine():
                 break
         print("\n")
         count = 1
-        for docID in sorted(score, key=score.get, reverse=True):
+        sortedDocIDs = sorted(score, key=score.get, reverse=True)
+        for docID in sortedDocIDs:
             rslt = self.cache.lookupCachedURL_byID(int(docID))
             print(count, ")", rslt[2], "\n", rslt[0])
             print("Score:", score[docID], "\n")
             count += 1
-            if count > 5:
+            if count < 5:
                 break
+        """
 
 
-    def getNNNQuery(self):
+    def getNNNQuery(self, q = ""):
         query = {}
         #get tf for terms in query
-        for term in self.getQuery():
+        for term in self.getQuery(q):
             if term not in query.keys():
                 query[term] = 1
             else:
@@ -291,8 +303,8 @@ class BooleanSearchEngine():
         return query
 
     
-    def getLTCQuery(self):
-        query = self.getNNNQuery()
+    def getLTCQuery(self, q = ""):
+        query = self.getNNNQuery(q)
         #get weights and squared magnitude
         sqMag = 0
         for term in query.keys():
@@ -308,15 +320,59 @@ class BooleanSearchEngine():
             query[term] = query[term]/math.sqrt(sqMag)
         return query
         
-    def getQuery(self):
-        query = input("Enter query: ")
+    def getQuery(self, query = ""):
+        if query == "":
+            query = input("Enter query: ")
+        query = query.translate(query.maketrans("", "", string.punctuation))
         query = query.split()
         query = self.spider.stem(self.spider.lower(query))
         return query
 
+    def translateResults(self, item, results):
+        """
+        Finds number R of relevant webpages for a given item.
+        Also processes results into true/false list.
+        Returns a tuple booleanRslts, R
+        """
+        booleanRslts = []
+        R = 0
+        #results is a list of docIDs
+        for docID in results:
+            itemID = self.cache.lookupItemIDFromDocID(int(docID))
+            if self.cache.lookupItemName(itemID) == item:
+                booleanRslts.append(True)
+                R += 1
+            else:
+                booleanRslts.append(False)
+        return booleanRslts, R
+
 def main():
     bse = BooleanSearchEngine("data/clean/", "data/cache.db", "data/nnnindex.p", "data/ltcindex.p")
 
+
+    queries = lab5.getQueries()
+    for q in queries:
+        print(q)
+        nnnq = bse.getNNNQuery(q)
+        ltcq = bse.getLTCQuery(q)
+        print("nnn.nnn")
+        bse.scoreDocs(nnnq, False, q)
+        print("nnn.ltc")
+        bse.scoreDocs(nnnq, True, q)
+        print("ltc.nnn")
+        bse.scoreDocs(ltcq, False, q)
+        print("ltc.ltc")
+        bse.scoreDocs(ltcq, True, q)
+        print("Random")
+        #rslts = lab5.randomResult()
+        #rslts, R = bse.translateResults(q, rslts)
+        #all precision tests
+        
+
+    
+    
+    #a while loop for weighted queries
+    """
     search = ""
     while search != "n":
         d = input("For documents: nnn or ltc?: ")
@@ -330,7 +386,7 @@ def main():
         else:
             bse.scoreDocs(query, False)
         search = input("Continue? y/n: ")
-            
+    """     
     
     #a while loop for getting user queries for BOOLEAN RETRIEVAL
     """

@@ -11,7 +11,7 @@ import webdb
 def getQueries():
     """
     This function will use the txt files in the item folder
-    to generate the test queries and return them (as a list?)
+    to generate the test queries and return them (as a list)
     so that they can be run as nnn.nnn, nnn.ltc, ltc.nnn, ltc.ltc
     """
     #create list of queries
@@ -25,7 +25,7 @@ def getQueries():
         for line in f.readlines():
             line = line.strip("\n")
             #append item+type string to queries list
-            queries.append(line+" "+t.strip(".txt"))
+            queries.append(line)
 
     return queries
     
@@ -37,23 +37,8 @@ def randomResult():
     """
 
 #Kelly
-def translateResults(item, results):
-    """
-    Finds number R of relevant webpages for a given item.
-    Also processes results into true/false list.
-    Returns a tuple booleanRslts, R
-    """
-    booleanRslts = []
-    R = 0
-    #results is a list of docIDs
-    for docID in results:
-        itemID = webdb.lookupItemIDFromDocID(docID)
-        if webdb.lookupItemName(itemID) == item:
-            booleanRslts.append(True)
-            R += 1
-        else:
-            booleanRslts.append(False)
-    return booleanRslts, R
+#translateResults() has been moved to query.py
+#because it requires use of the database
     
         
     
@@ -71,15 +56,13 @@ def averagePrecision():
     """
 
 #Kelly
-def auc(rrtuple):
+def auc(rslts, R):
     """
     At each True Negative, multiply the current True Positive rate
     by 1/(number of irrelevant results)
     number of irrelevant results determined by subtracting R
     from total number of results.
     """
-    rslts = rrtuple[0]
-    R = rrtuple[1]
     tp = 0
     auc = 0
     for r in rslts:
@@ -89,9 +72,10 @@ def auc(rrtuple):
             auc += tp * 1/(len(rslts)-R)
     return auc
 
-
+"""
 def main():
     #for testing functions
     
     
 main()
+"""
