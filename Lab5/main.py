@@ -18,7 +18,7 @@ ADDED BY KSADWIN: do not alphabetize terms for clean directory!!!!!
 
 import os, sys
 
-from WebDB import *
+from webdb import *
 from google import search
 from spider import *
 

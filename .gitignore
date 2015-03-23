@@ -47,6 +47,3 @@ Temporary Items
 
 # except items
 !data/item/
-
-# apparently the database is too big so
-data/cache.db
