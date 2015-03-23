@@ -270,7 +270,7 @@ class BooleanSearchEngine():
         
         rslts, R = self.translateResults(rq, sortedDocIDs)
         #TODO: return other precision tests
-        return lab5.auc(rslts, R)
+        return rslts, R
 
         """
         count = 1
@@ -348,7 +348,9 @@ class BooleanSearchEngine():
 
 def main():
     bse = BooleanSearchEngine("data/clean/", "data/cache.db", "data/nnnindex.p", "data/ltcindex.p")
-
+    pa10 = [0] *4
+    par = [0] *4
+    ap = [0] *4
     auc = [0] *4
     queries = lab5.getQueries()
     for q in queries:
@@ -356,23 +358,31 @@ def main():
         nnnq = bse.getNNNQuery(q)
         ltcq = bse.getLTCQuery(q)
         #nnn.nnn
-        auc[0] += bse.scoreDocs(nnnq, False, q)
+        rslts, R = bse.scoreDocs(nnnq, False, q)
+        lab5.evaluateScores(pa10, par, ap, auc, 0, rslts, R)
 
         #ltc.nnn
-        auc[1] += bse.scoreDocs(nnnq, True, q)
+        rslts, R = bse.scoreDocs(nnnq, True, q)
+        lab5.evaluateScores(pa10, par, ap, auc, 1, rslts, R)
 
         #nnn.ltc
-        auc[2] += bse.scoreDocs(ltcq, False, q)
+        rslts, R = bse.scoreDocs(ltcq, False, q)
+        lab5.evaluateScores(pa10, par, ap, auc, 2, rslts, R)
 
         #ltc.ltc
-        auc[3] += bse.scoreDocs(ltcq, True, q)
+        rslts, R = bse.scoreDocs(ltcq, True, q)
+        lab5.evaluateScores(pa10, par, ap, auc, 3, rslts, R)
 
         
-        #rslts = lab5.randomResult()
-        #rslts, R = bse.translateResults(q, rslts)
-        #all precision tests
+        #STILL NEED RANDOM RESULTS
         
     for i in range(4):
+        pa10[i] = pa10[i]/len(queries)
+        print(pa10[i])
+        par[i] = par[i]/len(queries)
+        print(par[i])
+        ap[i] = ap[i]/len(queries)
+        print(ap[i])
         auc[i] = auc[i]/len(queries)
         print(auc[i])
     
