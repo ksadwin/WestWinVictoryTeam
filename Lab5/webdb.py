@@ -66,14 +66,21 @@ class WebDB(object):
 
         return res
 
+    def getItemRVal(self, itmID):
+
+        strg = "SELECT itemID FROM URLToItem WHERE itemID = %d"\
+              % (itmID)
+        self.cur.execute(strg)
+        data = self.cur.fetchall()
+        return len(data)
 
     def countURLs(self):
         """
         Returns the number of URLs in the database.
         """
 
-        strq = "SELECT id FROM CachedURL"
-        self.cur.execute(strq)
+        strg = "SELECT id FROM CachedURL"
+        self.cur.execute(strg)
         data = self.cur.fetchall()
         return len(data)
 
