@@ -8,9 +8,9 @@ Using the database created in Lab 2, returns pages that match:
  4. a phrase query
  5. a NEAR query
 """
-from Lab5 import webdb
-from Lab5 import spider
+import webdb
 import os, sys
+from spider import *
 import pickle
 import math
 import lab5
@@ -20,9 +20,9 @@ class BooleanSearchEngine():
     def __init__(self, dirLocation, cache, nnnp, ltcp):
         self.cache = webdb.WebDB(cache)
         self.dir = dirLocation
-        self.spider = spider.Spider()
-        #It's not hardcoded anymore, Kelly!
-        self.N = self.cache.countURLs()
+        self.spider = Spider()
+        #hardcoded no. of documents - JEN HELP
+        self.N = 771
         #search for pickled index
         if os.path.exists(nnnp) and os.path.exists(ltcp):
             print("Loading data...")
@@ -344,10 +344,6 @@ class BooleanSearchEngine():
                 R += 1
             else:
                 booleanRslts.append(False)
-
-        #Print to test that numbers are making sense.
-        print(item, "has", R, "out of", self.N, "results.")
-
         return booleanRslts, R
 
 def main():
@@ -359,20 +355,34 @@ def main():
         print(q)
         nnnq = bse.getNNNQuery(q)
         ltcq = bse.getLTCQuery(q)
-        print("nnn.nnn")
-        bse.scoreDocs(nnnq, False, q)
-        print("nnn.ltc")
-        bse.scoreDocs(nnnq, True, q)
-        print("ltc.nnn")
-        bse.scoreDocs(ltcq, False, q)
-        print("ltc.ltc")
-        bse.scoreDocs(ltcq, True, q)
-        print("Random")
-        rslts = lab5.randomResult(bse.N)
-        #rslts, R = bse.translateResults(q, rslts)
-        #all precision tests
-        
+        #nnn.nnn
+        rslts, R = bse.scoreDocs(nnnq, False, q)
+        lab5.evaluateScores(pa10, par, ap, auc, 0, rslts, R)
 
+        #ltc.nnn
+        rslts, R = bse.scoreDocs(nnnq, True, q)
+        lab5.evaluateScores(pa10, par, ap, auc, 1, rslts, R)
+
+        #nnn.ltc
+        rslts, R = bse.scoreDocs(ltcq, False, q)
+        lab5.evaluateScores(pa10, par, ap, auc, 2, rslts, R)
+
+        #ltc.ltc
+        rslts, R = bse.scoreDocs(ltcq, True, q)
+        lab5.evaluateScores(pa10, par, ap, auc, 3, rslts, R)
+
+        
+        #STILL NEED RANDOM RESULTS
+        
+    for i in range(4):
+        pa10[i] = pa10[i]/len(queries)
+        print(pa10[i])
+        par[i] = par[i]/len(queries)
+        print(par[i])
+        ap[i] = ap[i]/len(queries)
+        print(ap[i])
+        auc[i] = auc[i]/len(queries)
+        print(auc[i])
     
     
     #a while loop for weighted queries

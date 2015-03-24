@@ -59,6 +59,7 @@ def randomResult(totalURLS):
 #because it requires use of the database
     
         
+    
 #Jen
 def precisionAt10(rslts, R):
     """
@@ -82,6 +83,15 @@ def precisionAt(rslts, R):
     Finds precision at int R (R is the number of relevant results available)
     (number of relevant webpages found in first R results/R)
     """
+    if R == 0:
+        return 0
+    tp = 0
+    par = 0
+    for i in range(R):
+        if rslts[i]:
+            tp += 1
+    par = tp/R
+    return par
 
     found = 0
 
@@ -96,7 +106,7 @@ def precisionAt(rslts, R):
 #Jen
 def averagePrecision(rslts, R):
     """
-    Averages precision at each True Positive result.
+    Averages precision at each True Positive result
     """
     found = 0
     totalPrecAtR = 0.0
@@ -109,6 +119,18 @@ def averagePrecision(rslts, R):
     avgPrec = (totalPrecAtR/found)
 
     return avgPrec
+    if R == 0:
+        return 0
+    ap = 0
+    tp = 0
+    i = 0
+    while tp < R:
+        if rslts[i]:
+            tp += 1
+            ap += tp/(i+1)
+        i += 1
+    return ap/tp
+            
 
 #Kelly
 def auc(rslts, R):
@@ -118,6 +140,8 @@ def auc(rslts, R):
     number of irrelevant results determined by subtracting R
     from total number of results.
     """
+    if R == 0:
+        return 0
     tp = 0
     auc = 0
     for r in rslts:
@@ -126,6 +150,13 @@ def auc(rslts, R):
         else:
             auc += tp * 1/(len(rslts)-R)
     return auc
+
+#new, just for neatness
+def evaluateScores(pa10List, parList, apList, aucList, i, rslts, R):
+    pa10List[i] += precisionAt(rslts, 10)
+    parList[i] += precisionAt(rslts, R)
+    apList[i] += averagePrecision(rslts, R)
+    aucList[i] += auc(rslts, R)
 
 """
 def main():
