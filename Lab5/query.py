@@ -8,9 +8,9 @@ Using the database created in Lab 2, returns pages that match:
  4. a phrase query
  5. a NEAR query
 """
-import webdb
+from Lab5 import webdb
+from Lab5 import spider
 import os, sys
-from spider import *
 import pickle
 import math
 import lab5
@@ -20,9 +20,9 @@ class BooleanSearchEngine():
     def __init__(self, dirLocation, cache, nnnp, ltcp):
         self.cache = webdb.WebDB(cache)
         self.dir = dirLocation
-        self.spider = Spider()
-        #hardcoded no. of documents - JEN HELP
-        self.N = 771
+        self.spider = spider.Spider()
+        #It's not hardcoded anymore, Kelly!
+        self.N = self.cache.countURLs()
         #search for pickled index
         if os.path.exists(nnnp) and os.path.exists(ltcp):
             print("Loading data...")
@@ -344,6 +344,10 @@ class BooleanSearchEngine():
                 R += 1
             else:
                 booleanRslts.append(False)
+
+        #Print to test that numbers are making sense.
+        print(item, "has", R, "out of", self.N, "results.")
+
         return booleanRslts, R
 
 def main():
@@ -364,7 +368,7 @@ def main():
         print("ltc.ltc")
         bse.scoreDocs(ltcq, True, q)
         print("Random")
-        #rslts = lab5.randomResult()
+        rslts = lab5.randomResult(bse.N)
         #rslts, R = bse.translateResults(q, rslts)
         #all precision tests
         

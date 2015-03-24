@@ -5,7 +5,8 @@ Let's keep updating this as we find more functions to write!
 """
 
 import os
-import webdb
+from Lab5 import webdb
+import random
 
 #Kelly
 def getQueries():
@@ -31,29 +32,83 @@ def getQueries():
     
 
 #Jen
-def randomResult():
+def randomResult(totalURLS):
     """
-    Returns all webpages in a random order.
+    Returns a boolean true value list that represents a random result.
+    12 books, 14 movies, 13 musical artist = 39 items.
+    763/39 is about 20 so it adds 20 true results to the list and randomizes it.
     """
+
+    booleanRanRslts = []
+
+    for r in range (0,743):
+        booleanRanRslts.append(False)
+
+    for r in range (0,20):
+        booleanRanRslts.append(True)
+
+    booleanRanRslts = random.shuffle(booleanRanRslts)
+
+    print (booleanRanRslts)
+
+    return booleanRanRslts
+
 
 #Kelly
 #translateResults() has been moved to query.py
 #because it requires use of the database
     
         
-    
 #Jen
-def precisionAt(R):
+def precisionAt10(rslts, R):
     """
-    Finds precision at int R
+    Finds precision in the top 10 results out of R (R is the number of relevant results available)
+    (number of relevant webpages found in first 10 results/R)
+    """
+
+    found = 0
+
+    for x in range(0,10):
+        if rslts[x]:
+            found += 1
+
+    precAt10 = found/R
+
+    return precAt10
+
+#Jen
+def precisionAt(rslts, R):
+    """
+    Finds precision at int R (R is the number of relevant results available)
     (number of relevant webpages found in first R results/R)
     """
 
+    found = 0
+
+    for x in range(0,R):
+        if rslts[x]:
+            found += 1
+
+    precAtR = found/R
+
+    return precAtR
+
 #Jen
-def averagePrecision():
+def averagePrecision(rslts, R):
     """
-    Averages precision at each True Positive result
+    Averages precision at each True Positive result.
     """
+    found = 0
+    totalPrecAtR = 0.0
+
+    for x in range (0,R):
+        if rslts[x]:
+            found += 1
+            totalPrecAtR += (found/x)
+
+    avgPrec = (totalPrecAtR/found)
+
+    return avgPrec
 
 #Kelly
 def auc(rslts, R):

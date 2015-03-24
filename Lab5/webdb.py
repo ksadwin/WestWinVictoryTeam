@@ -67,6 +67,16 @@ class WebDB(object):
         return res
 
 
+    def countURLs(self):
+        """
+        Returns the number of URLs in the database.
+        """
+
+        strq = "SELECT id FROM CachedURL"
+        self.cur.execute(strq)
+        data = self.cur.fetchall()
+        return len(data)
+
     ####----------####
     #### CachedURL ####
 
@@ -269,5 +279,8 @@ if __name__=='__main__':
     (url, docType, title) =  db.lookupCachedURL_byID(urlID);
 
     print("Page Info: ",url,"\t" , docType,"\t", title)
+    print("Number of URLS: ", db.countURLs())
+
+
 
     
