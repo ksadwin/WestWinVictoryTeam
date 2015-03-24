@@ -22,7 +22,7 @@ class BooleanSearchEngine():
         self.dir = dirLocation
         self.spider = Spider()
         #hardcoded no. of documents - JEN HELP
-        self.N = 771
+        self.N = self.cache.countURLs()
         #search for pickled index
         if os.path.exists(nnnp) and os.path.exists(ltcp):
             print("Loading data...")
@@ -269,9 +269,9 @@ class BooleanSearchEngine():
         sortedDocIDs = sorted(score, key=score.get, reverse=True)
         
         rslts, R = self.translateResults(rq, sortedDocIDs)
-        #TODO: add other precision tests
-        print("AUC:", lab5.auc(rslts, R))
+        return rslts, R
 
+        #lab 4
         """
         count = 1
         for item in sorted(itemScore, key=itemScore.get, reverse=True):
@@ -281,13 +281,12 @@ class BooleanSearchEngine():
                 break
         print("\n")
         count = 1
-        sortedDocIDs = sorted(score, key=score.get, reverse=True)
         for docID in sortedDocIDs:
             rslt = self.cache.lookupCachedURL_byID(int(docID))
             print(count, ")", rslt[2], "\n", rslt[0])
             print("Score:", score[docID], "\n")
             count += 1
-            if count < 5:
+            if count > 5:
                 break
         """
 
@@ -324,6 +323,7 @@ class BooleanSearchEngine():
         if query == "":
             query = input("Enter query: ")
         query = query.translate(query.maketrans("", "", string.punctuation))
+        #print(query)
         query = query.split()
         query = self.spider.stem(self.spider.lower(query))
         return query
@@ -349,39 +349,73 @@ class BooleanSearchEngine():
 def main():
     bse = BooleanSearchEngine("data/clean/", "data/cache.db", "data/nnnindex.p", "data/ltcindex.p")
 
+    pa10 = [0] *5
+    par = [0] *5
+    ap = [0] *5
+    auc = [0] *5
+    #for each of the three item types
+    path = "data/item/"
+    types = os.listdir(path)
+    numqueries = 0
+    for t in types:
+        f = open(path+t, "r")
+        #for each item in the file
+        for line in f.readlines():
+            numqueries += 1
+            q = line.strip("\n")
+            if q == "Pirates of the Caribbean: Dead Man's Chest":
+                continue
+            nnnq = bse.getNNNQuery(q)
+            ltcq = bse.getLTCQuery(q)
 
-    queries = lab5.getQueries()
-    for q in queries:
-        print(q)
-        nnnq = bse.getNNNQuery(q)
-        ltcq = bse.getLTCQuery(q)
-        #nnn.nnn
-        rslts, R = bse.scoreDocs(nnnq, False, q)
-        lab5.evaluateScores(pa10, par, ap, auc, 0, rslts, R)
+            t = t.strip(".txt")
+            itemID = bse.cache.lookupItem(q, t)
+            R = bse.cache.getItemRVal(itemID)
+            #nnn.nnn
+            rslts, numTrue = bse.scoreDocs(nnnq, False, q)
+            for i in range(R-numTrue):
+                rslts.append(True)
+            for i in range(bse.N - len(rslts)):
+                rslts.append(False)
+            lab5.evaluateScores(pa10, par, ap, auc, 0, rslts, R)
 
-        #ltc.nnn
-        rslts, R = bse.scoreDocs(nnnq, True, q)
-        lab5.evaluateScores(pa10, par, ap, auc, 1, rslts, R)
+            #ltc.nnn
+            rslts, numTrue = bse.scoreDocs(nnnq, True, q)
+            for i in range(R-numTrue):
+                rslts.append(True)
+            for i in range(bse.N - len(rslts)):
+                rslts.append(False)
+            lab5.evaluateScores(pa10, par, ap, auc, 1, rslts, R)
 
-        #nnn.ltc
-        rslts, R = bse.scoreDocs(ltcq, False, q)
-        lab5.evaluateScores(pa10, par, ap, auc, 2, rslts, R)
+            #nnn.ltc
+            rslts, numTrue = bse.scoreDocs(ltcq, False, q)
+            for i in range(R-numTrue):
+                rslts.append(True)
+            
+            for i in range(bse.N - len(rslts)):
+                rslts.append(False)
+            lab5.evaluateScores(pa10, par, ap, auc, 2, rslts, R)
 
-        #ltc.ltc
-        rslts, R = bse.scoreDocs(ltcq, True, q)
-        lab5.evaluateScores(pa10, par, ap, auc, 3, rslts, R)
+            #ltc.ltc
+            rslts, numTrue = bse.scoreDocs(ltcq, True, q)
+            for i in range(R-numTrue):
+                rslts.append(True)
+            for i in range(bse.N - len(rslts)):
+                rslts.append(False)
+            lab5.evaluateScores(pa10, par, ap, auc, 3, rslts, R)
 
-        
-        #STILL NEED RANDOM RESULTS
-        
-    for i in range(4):
-        pa10[i] = pa10[i]/len(queries)
+            #EVALUATE R
+            rslts = lab5.randomResult(bse.N, R)
+            lab5.evaluateScores(pa10, par, ap, auc, 4, rslts, R)
+
+    for i in range(5):
+        pa10[i] = pa10[i]/numqueries
         print(pa10[i])
-        par[i] = par[i]/len(queries)
+        par[i] = par[i]/numqueries
         print(par[i])
-        ap[i] = ap[i]/len(queries)
+        ap[i] = ap[i]/numqueries
         print(ap[i])
-        auc[i] = auc[i]/len(queries)
+        auc[i] = auc[i]/numqueries
         print(auc[i])
     
     
